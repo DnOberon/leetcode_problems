@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 type LRUCache struct {
 	capacity int
 	cache    map[int]*node
@@ -9,10 +7,10 @@ type LRUCache struct {
 }
 
 type node struct {
-	key  int
-	val  int
 	prev *node
 	next *node
+	key  int
+	val  int
 }
 
 type list struct {
@@ -20,8 +18,35 @@ type list struct {
 	tail *node
 }
 
+func (this *LRUCache) insert(n *node) {
+	if this.list.tail == nil {
+		this.list.tail = n
+	}
+
+	if this.list.head == nil {
+		this.list.head = n
+		n.next = this.list.tail
+
+		return
+	}
+
+	this.list.head.prev, n.next, this.list.head = n, this.list.head, n
+}
+
+func (this *LRUCache) popTail() {
+	delete(this.cache, this.list.tail.key)
+
+	if this.list.tail.prev == nil {
+		this.list.tail = nil
+		return
+	}
+
+	this.list.tail.prev.next = nil
+	this.list.tail = this.list.tail.prev
+}
+
 func Constructor(capacity int) LRUCache {
-	return LRUCache{capacity, map[int]*node{}, list{}}
+	return LRUCache{capacity: capacity, list: list{nil, nil}, cache: map[int]*node{}}
 }
 
 func (this *LRUCache) Get(key int) int {
@@ -30,76 +55,42 @@ func (this *LRUCache) Get(key int) int {
 		return -1
 	}
 
-	// if node is head of list, do nothing
-	if this.list.head != nil && this.list.head.key == node.key {
+	if this.list.head != nil && node.key == this.list.head.key {
 		return node.val
 	}
 
-	// if node is tail
-	if this.list.tail != nil && this.list.tail.key == node.key {
-		// null prev's next
-		if node.prev != nil {
-			node.prev.next = nil
-			this.list.tail = node.prev
-		}
-
-		node.prev = nil
-
-		// set head
-		node.next = this.list.head
-		this.list.head = node
+	if this.list.tail != nil && node.key == this.list.tail.key {
+		this.popTail()
+		this.insert(node)
+		this.cache[node.key] = node
 
 		return node.val
 	}
 
-	// at this point, the node is somewhere in the middle, join the sides
-	if node.prev != nil && node.prev.next != nil {
+	if node.prev != nil && node.next != nil {
 		node.prev.next = node.next
-	}
-
-	if node.next != nil && node.next.prev != nil {
 		node.next.prev = node.prev
+		this.insert(node)
 	}
-	node.prev = nil
-
-	// set head
-	node.next = this.list.head
-	this.list.head = node
 
 	return node.val
 }
 
 func (this *LRUCache) Put(key int, value int) {
-	// we'll let the get function do heavy lifting with shifting things around on attempting
-	// to set a key that already exists
-	if this.Get(key) > 0 {
+	// we let Get do the heavy lifting of moving an existing key to the front
+	if this.Get(key) != -1 {
 		this.cache[key].val = value
-
 		return
 	}
 
-	// create node, add to cache, and set head (if needed also set as tail)
-	node := &node{key, value, nil, this.list.head}
-	this.cache[key] = node
+	n := &node{key: key, val: value}
 
-	this.list.head = node
+	this.cache[key] = n
+	this.insert(n)
 
-	if this.list.tail == nil {
-		this.list.tail = node
+	if len(this.cache) > this.capacity {
+		this.popTail()
 	}
-
-	// if cache length is over maximum, we need to remove the final node
-	if len(this.cache) <= this.capacity {
-		return
-	}
-
-	delete(this.cache, this.list.tail.key)
-
-	if this.list.tail.prev != nil {
-		this.list.tail.prev.next = nil
-	}
-
-	this.list.tail = this.list.tail.prev
 
 	return
 }
