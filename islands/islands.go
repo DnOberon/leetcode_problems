@@ -32,7 +32,7 @@ func numIslands(grid [][]byte) int {
 }
 
 // search isn't returning values - its only job is to mark any land
-// connected to the giving cooridinate as visited.
+// connected to the given cooridinate as visited.
 func search(grid [][]byte, rows, columns, y, x int) {
 	if grid[y][x] == water {
 		return

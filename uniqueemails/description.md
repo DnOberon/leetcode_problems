@@ -1,3 +1,5 @@
+### 929. Unique Email Addresses
+
 Every email consists of a local name and a domain name, separated by the @ sign.
 
 For example, in alice@leetcode.com, alice is the local name, and leetcode.com is the domain name.
